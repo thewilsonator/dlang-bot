@@ -1,1 +1,1 @@
-
+module bugzilla;
