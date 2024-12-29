@@ -94,64 +94,13 @@ struct IssueRef { int id; bool fixed; Json[] commits; }
 // get all issues mentioned in a commit
 IssueRef[] getIssueRefs(RE)(Json[] commits, RE re = issueRE)
 {
-    return commits
-        // Collect all issue references (range of ranges per commit)
-        .map!(c => c["commit"]["message"]
-            .get!string
-            .matchIssueRefs(re)
-            .map!((r) { r.commits = [c]; return r; })
-        )
-        // Join to flat list
-        .join
-        // Sort and group by issue ID
-        .sort!((a, b) => a.id < b.id, SwapStrategy.stable)
-        .groupBy
-        // Reduce each per-ID group to a single IssueRef
-        .map!(g => g
-            .reduce!((a, b) =>
-                IssueRef(a.id, a.fixed || b.fixed, a.commits ~ b.commits)
-            )
-        )
-        .array;
-}
-
-unittest
-{
-    Json fix(int id) { return ["commit":["message":"Fix Bugzilla %d".format(id).Json].Json].Json; }
-    Json mention(int id) { return ["commit":["message":"Bugzilla %d".format(id).Json].Json].Json; }
-
-    assert(getIssueRefs([fix(1)]) == [IssueRef(1, true, [fix(1)])]);
-    assert(getIssueRefs([mention(1)]) == [IssueRef(1, false, [mention(1)])]);
-    assert(getIssueRefs([fix(1), mention(1)]) == [IssueRef(1, true, [fix(1), mention(1)])]);
-    assert(getIssueRefs([mention(1), fix(1)]) == [IssueRef(1, true, [mention(1), fix(1)])]);
-    assert(getIssueRefs([mention(1), fix(2), fix(1)]) == [IssueRef(1, true, [mention(1), fix(1)]), IssueRef(2, true, [fix(2)])]);
+    return null;
 }
 
 UserMessage[] checkLegacyIssueRefs(Json[] commits)
 {
-    auto oldHits = commits.getIssueRefs(oldIssueRE).map!(r => r.id);
-    auto newHits = commits.getIssueRefs(issueRE).map!(r => r.id);
-    auto onlyOld = oldHits.filter!(id => !newHits.canFind(id));
-    if (!onlyOld.empty)
-        return [UserMessage(UserMessage.Type.Warning,
-            "In preparation for migrating from Bugzilla to GitHub Issues, the issue reference syntax has changed. " ~
-            "Please add the word \"Bugzilla\" to issue references.  For example, `Fix Bugzilla Issue 12345` or `Fix Bugzilla 12345`." ~
-            "(Reminder: the edit needs to be done in the Git *commit message*, not the GitHub *pull request*.)"
-        )];
     return null;
 }
-
-unittest
-{
-   Json fixOld(int id) { return ["commit":["message":"Fix Issue %d".format(id).Json].Json].Json; }
-   Json fixNew(int id) { return ["commit":["message":"Fix Bugzilla %d".format(id).Json].Json].Json; }
-
-   assert( checkLegacyIssueRefs([]).empty);
-   assert( checkLegacyIssueRefs([fixNew(1)]).empty);
-   assert( checkLegacyIssueRefs([fixOld(1), fixNew(1)]).empty);
-   assert(!checkLegacyIssueRefs([fixOld(1)]).empty);
-   assert(!checkLegacyIssueRefs([fixOld(1), fixNew(2)]).empty);
- }
 
 struct Issue
 {
