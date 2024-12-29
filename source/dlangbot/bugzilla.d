@@ -6,7 +6,7 @@ import vibe.inet.webform : urlEncode;
 shared string bugzillaURL = "https://issues.dlang.org";
 
 // D projects which use Bugzilla for bug tracking.
-static immutable bugzillaProjectSlugs = ["dlang/tools", "dlang/installer"];
+static immutable bugzillaProjectSlugs = ["dlang/installer"];
 
 
 import std.algorithm, std.conv, std.range, std.string;
